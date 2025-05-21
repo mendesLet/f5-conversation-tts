@@ -18,25 +18,23 @@ from f5_tts.infer.utils_infer import (
 )
 
 
-def load_br_speech_references():
-    dataset = load_dataset("freds0/BRSpeech-TTS-Leni", split="train")
-
-    reference_files = {}
+def get_reference_audio(speaker_id, dataset):
+    """Get reference audio for a specific speaker"""
     for item in dataset:
-        speaker_id = item['filepath'] 
-        if speaker_id not in reference_files:
-            reference_files[speaker_id] = item['audio']['array']
+        if item['filepath'] == speaker_id:
+            return item['audio']['array']
+    return None
 
-    return reference_files
-
-def assign_speaker_voices(speakers, reference_files):
+def assign_speaker_voices(speakers, dataset):
     """Assign a unique reference voice to each speaker"""
     speaker_voices = {}
-    reference_list = list(reference_files.values())
+    speaker_ids = list(set(speakers))
     
-    for i, speaker in enumerate(set(speakers)):
-        # Assign a reference file to each speaker
-        speaker_voices[speaker] = reference_list[i % len(reference_list)]
+    for i, speaker in enumerate(speaker_ids):
+        # Get a reference file for each speaker
+        ref_audio = get_reference_audio(speaker, dataset)
+        if ref_audio is not None:
+            speaker_voices[speaker] = ref_audio
     return speaker_voices
 
 def generate_conversation_audio(dialog_data, output_dir, model, vocoder, mel_spec_type="vocos"):
@@ -47,11 +45,11 @@ def generate_conversation_audio(dialog_data, output_dir, model, vocoder, mel_spe
     # Get unique speakers
     speakers = dialog_data['Speaker'].unique()
     
-    # Load BR-Speech references
-    reference_files = load_br_speech_references()
+    # Load BR-Speech dataset
+    dataset = load_dataset("freds0/BRSpeech-TTS-Leni", split="train")
     
     # Assign voices to speakers
-    speaker_voices = assign_speaker_voices(speakers, reference_files)
+    speaker_voices = assign_speaker_voices(speakers, dataset)
     
     # Generate audio for each turn
     for idx, row in dialog_data.iterrows():
