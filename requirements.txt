@@ -1,0 +1,7 @@
+f5_tts
+huggingface_hub
+datasets
+pandas
+soundfile
+numpy
+cached_path
