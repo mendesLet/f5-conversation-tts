@@ -14,7 +14,6 @@ from f5_tts.infer.utils_infer import (
     load_model,
     load_vocoder,
 )
-from AgentF5TTSChunk import AgentF5TTS
 
 
 def get_reference_audio(speaker_id, dataset):
@@ -80,15 +79,18 @@ def generate_conversation_audio(dialog_data, output_dir, model, vocoder, mel_spe
                 output_path = os.path.join(output_dir, output_file)
                 
                 # Generate audio
-                agent.model.infer(
-                    ref_file=temp_ref_path,
-                    ref_text="",  # No reference text needed
-                    gen_text=text,
-                    file_wave=output_path,
-                    remove_silence=True
+                audio, final_sample_rate, _ = infer_process(
+                    temp_ref_path,  # Using the temporary file path
+                    text,
+                    text,
+                    model,
+                    vocoder,
+                    mel_spec_type=mel_spec_type,
+                    speed=1.0
                 )
                 
                 # Save audio
+                sf.write(output_path, audio, final_sample_rate)
                 print(f"Generated audio for {output_file}")
                 
             finally:
@@ -117,17 +119,10 @@ def main():
     print("Loading model and vocoder...")
     model_cls = DiT
     model_cfg = config['model']['config']
-    
-    # Use local model file instead of downloading from Hugging Face
     ckpt_file = config['model']['local_model_path']
-    print(f"Loading model from local checkpoint: {ckpt_file}")
     
-    model = AgentF5TTS(
-    ckpt_file=config['model']['local_model_path'],
-    vocoder_name="vocos",
-    delay=0,
-    device="cuda" if os.environ.get("CUDA_VISIBLE_DEVICES") else "cpu"
-)
+    print(f"Loading model from checkpoint: {ckpt_file}")
+    model = load_model(model_cls, model_cfg, ckpt_file, mel_spec_type=config['audio']['mel_spec_type'])
     vocoder = load_vocoder(vocoder_name="vocos", is_local=False)
     
     print("Beginning conversation audio generation...")
