@@ -119,12 +119,11 @@ def main():
     print("Loading model and vocoder...")
     model_cls = DiT
     model_cfg = config['model']['config']
-    repo_name = config['model']['repo']
-    exp_name = config['model']['name']
-    ckpt_step = config['model']['checkpoint_step']
-    ckpt_file = str(cached_path(f"hf://SWivid/{repo_name}/{exp_name}/model_{ckpt_step}.safetensors"))
     
-    print(f"Loading model from checkpoint: {ckpt_file}")
+    # Use local model file instead of downloading from Hugging Face
+    ckpt_file = config['model']['local_model_path']
+    print(f"Loading model from local checkpoint: {ckpt_file}")
+    
     model = load_model(model_cls, model_cfg, ckpt_file, mel_spec_type=config['audio']['mel_spec_type'])
     vocoder = load_vocoder(vocoder_name="vocos", is_local=False)
     

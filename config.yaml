@@ -1,8 +1,9 @@
 # Model Configuration
 model:
-  name: "F5TTS_Base"
-  repo: "F5-TTS"
-  checkpoint_step: 1200000
+  name: "F5TTS_pt_br"
+  repo: "F5-TTS-pt-br"
+  checkpoint_step: "last"
+  local_model_path: "/home/lettuce/code/akcit/F5-TTS-pt-br/pt-br/model_last.safetensors"  # Path to local model file
   config:
     dim: 1024
     depth: 22
