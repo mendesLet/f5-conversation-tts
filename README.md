@@ -10,7 +10,7 @@ cd f5-conversation-tts
 
 2. Install dependencies:
 ```bash
-pip install -r f5/requirements.txt
+pip install -r requirements.txt
 ```
 
 ## Usage
@@ -27,5 +27,5 @@ model:
 
 2. Run the script:
 ```bash
-./f5/run_tts.sh --config f5/config.yaml --output generated_audio
+./run.sh --config config.yaml --output generated_audio
 ```

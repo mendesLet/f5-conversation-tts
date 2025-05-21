@@ -51,7 +51,7 @@ echo "Starting TTS generation..."
 echo "Using config file: $CONFIG_FILE"
 echo "Output directory: $OUTPUT_DIR"
 
-python f5/create_conversation.py \
+python create_conversation.py \
     --config "$CONFIG_FILE" \
     --output_dir "$OUTPUT_DIR"
 
