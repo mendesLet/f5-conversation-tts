@@ -4,8 +4,8 @@
 
 1. Clone the repository:
 ```bash
-git clone <your-repository-url>
-cd <repository-name>
+git clone git@github.com:mendesLet/f5-conversation-tts.git
+cd f5-conversation-tts
 ```
 
 2. Install dependencies:
