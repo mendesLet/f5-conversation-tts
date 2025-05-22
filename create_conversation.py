@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 import soundfile as sf
 import argparse
+import json
 from pathlib import Path
 from datasets import load_dataset
 from cached_path import cached_path
@@ -17,6 +18,13 @@ from f5_tts.infer.utils_infer import (
     remove_silence_for_generated_wav,
 )
 
+# Default model configuration for Brazilian Portuguese
+DEFAULT_TTS_MODEL = "F5-TTS-BR"
+DEFAULT_TTS_MODEL_CFG = [
+    "hf://ModelsLab/F5-tts-brazilian/Brazilian_Portuguese/model_2600000.pt",
+    "hf://ModelsLab/F5-tts-brazilian/Brazilian_Portuguese/vocab.txt",
+    json.dumps(dict(dim=1024, depth=22, heads=16, ff_mult=2, text_dim=512, conv_layers=4)),
+]
 
 def get_reference_audio(speaker_id, dataset):
     """Get reference audio and text for a specific speaker"""
@@ -145,12 +153,13 @@ def main():
     dialog_data = pd.read_parquet(config['dataset']['dialog_data_path'])
     
     print("Loading model and vocoder...")
-    model_cls = DiT
-    model_cfg = config['model']['config']
-    ckpt_file = config['model']['local_model_path']
+    # Load model using the Brazilian Portuguese checkpoint
+    ckpt_path = str(cached_path(DEFAULT_TTS_MODEL_CFG[0]))
+    model_cfg = json.loads(DEFAULT_TTS_MODEL_CFG[2])
+    vocab_file = str(cached_path(DEFAULT_TTS_MODEL_CFG[1]))
     
-    print(f"Loading model from checkpoint: {ckpt_file}")
-    model = load_model(model_cls, model_cfg, ckpt_file, mel_spec_type=config['audio']['mel_spec_type'])
+    print(f"Loading model from checkpoint: {ckpt_path}")
+    model = load_model(DiT, model_cfg, ckpt_path, mel_spec_type="vocos", vocab_file=vocab_file)
     vocoder = load_vocoder(vocoder_name="vocos", is_local=False)
     
     print("Beginning conversation audio generation...")
@@ -159,7 +168,7 @@ def main():
         args.output_dir, 
         model, 
         vocoder,
-        mel_spec_type=config['audio']['mel_spec_type']
+        mel_spec_type="vocos"
     )
     print("All audio generated successfully.")
 
