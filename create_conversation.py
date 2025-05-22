@@ -13,6 +13,8 @@ from f5_tts.infer.utils_infer import (
     infer_process,
     load_model,
     load_vocoder,
+    preprocess_ref_audio_text,
+    remove_silence_for_generated_wav,
 )
 
 
@@ -76,32 +78,53 @@ def generate_conversation_audio(dialog_data, output_dir, model, vocoder, mel_spe
 
             with tempfile.NamedTemporaryFile(suffix='.wav', delete=False) as temp_ref_file:
                 temp_ref_path = temp_ref_file.name
-                sf.write(temp_ref_path, ref_audio, 16000)  # Assuming 16kHz sample rate
+                sf.write(temp_ref_path, ref_audio, 24000)  # Using target sample rate of 24000 Hz
         
             try:
                 # Generate output filename
                 output_file = f"dialog_{dialog_id}_turn_{turn}_{speaker}.wav"
                 output_path = os.path.join(output_dir, output_file)
                 
-                # Generate audio
+                # Preprocess reference audio and text
+                processed_ref_audio, processed_ref_text = preprocess_ref_audio_text(
+                    temp_ref_path,
+                    ref_text,
+                    show_info=print
+                )
+                
+                # Generate audio with enhanced parameters
                 audio, final_sample_rate, _ = infer_process(
-                    temp_ref_path,  # Using the temporary file path
-                    ref_text,       # Using the reference text from the dataset
-                    gen_text,       # Using the translated sentence for generation
+                    processed_ref_audio,
+                    processed_ref_text,
+                    gen_text,
                     model,
                     vocoder,
                     mel_spec_type=mel_spec_type,
-                    speed=1.0
+                    speed=1.0,
+                    target_rms=0.1,  # Normalize audio levels
+                    cross_fade_duration=0.15,  # Smooth transitions
+                    nfe_step=32,  # More denoising steps for better quality
+                    cfg_strength=2.0,  # Better control over generation
+                    sway_sampling_coef=-1.0  # Better sampling
                 )
                 
-                # Save audio
+                # Remove any remaining silence
+                with tempfile.NamedTemporaryFile(suffix='.wav', delete=False) as temp_output:
+                    temp_output_path = temp_output.name
+                    sf.write(temp_output_path, audio, final_sample_rate)
+                    remove_silence_for_generated_wav(temp_output_path)
+                    audio, _ = sf.read(temp_output_path)
+                
+                # Save final audio
                 sf.write(output_path, audio, final_sample_rate)
                 print(f"Generated audio for {output_file}")
                 
             finally:
-                # Clean up the temporary file
+                # Clean up temporary files
                 if os.path.exists(temp_ref_path):
                     os.unlink(temp_ref_path)
+                if os.path.exists(temp_output_path):
+                    os.unlink(temp_output_path)
 
 def load_config(config_path):
     """Load configuration from YAML file"""
