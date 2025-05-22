@@ -17,30 +17,34 @@ from f5_tts.infer.utils_infer import (
 
 
 def get_reference_audio(speaker_id, dataset):
-    """Get reference audio for a specific speaker"""
+    """Get reference audio and text for a specific speaker"""
     for item in dataset:
         if item['filepath'] == speaker_id:
-            return item['audio']['array']
-    return None
+            return item['audio']['array'], item['text']
+    return None, None
 
 def assign_speaker_voices(speakers, dataset):
-    """Assign a unique reference voice to each speaker"""
+    """Assign a unique reference voice and text to each speaker"""
     speaker_voices = {}
+    speaker_texts = {}
     speaker_ids = list(set(speakers))
     
-    # Get all available reference audios from the dataset
+    # Get all available reference audios and texts from the dataset
     available_references = []
+    available_texts = []
     for item in dataset:
         available_references.append(item['audio']['array'])
+        available_texts.append(item['text'])
     
     # Assign references in a round-robin fashion
     for i, speaker in enumerate(speaker_ids):
         if available_references:  # Make sure we have references available
             ref_audio = available_references[i % len(available_references)]
+            ref_text = available_texts[i % len(available_texts)]
             speaker_voices[speaker] = ref_audio
-            # print(f"Assigned reference audio to speaker: {speaker}")
+            speaker_texts[speaker] = ref_text
     
-    return speaker_voices
+    return speaker_voices, speaker_texts
 
 def generate_conversation_audio(dialog_data, output_dir, model, vocoder, mel_spec_type="vocos"):
     """Generate audio for each turn in the conversation"""
@@ -53,7 +57,7 @@ def generate_conversation_audio(dialog_data, output_dir, model, vocoder, mel_spe
     dataset = load_dataset("freds0/BRSpeech-TTS-Leni", split="test")
     
     print("Assigning speaker voices...")
-    speaker_voices = assign_speaker_voices(speakers, dataset)
+    speaker_voices, speaker_texts = assign_speaker_voices(speakers, dataset)
     
     generated_count = 0
     max_audios = 1000
@@ -62,7 +66,8 @@ def generate_conversation_audio(dialog_data, output_dir, model, vocoder, mel_spe
     for idx, row in dialog_data.iterrows():
         if generated_count <= max_audios:           
             speaker = row['Speaker']
-            text = row['Translated_Sentence']
+            gen_text = row['Translated_Sentence']  # This is the text we want to generate
+            ref_text = speaker_texts[speaker]      # This is the reference text from the dataset
             dialog_id = row['Dialog']
             turn = row['Turn']
             
@@ -81,8 +86,8 @@ def generate_conversation_audio(dialog_data, output_dir, model, vocoder, mel_spe
                 # Generate audio
                 audio, final_sample_rate, _ = infer_process(
                     temp_ref_path,  # Using the temporary file path
-                    text,
-                    text,
+                    ref_text,       # Using the reference text from the dataset
+                    gen_text,       # Using the translated sentence for generation
                     model,
                     vocoder,
                     mel_spec_type=mel_spec_type,
