@@ -18,14 +18,12 @@ pip install -r requirements.txt
 1. Configure your settings in `config.yaml`:
 ```yaml
 # Example configuration
-model:
-  name: "F5TTS_Base"
-  repo: "F5-TTS"
-  checkpoint_step: 1200000
+dataset:
+  dialog_data_path: "hf://datasets/AKCIT-Audio/LIGHT_transcriptions/data/train-00000-of-00001.parquet"
   # ... other settings
 ```
 
 2. Run the script:
 ```bash
-./run.sh --config config.yaml --output generated_audio
+python conversational_agent.py --config config.yaml --output_dir generated_audio
 ```

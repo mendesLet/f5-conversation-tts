@@ -1,28 +1,5 @@
-# Model Configuration
-model:
-  name: "F5TTS_pt_br"
-  repo: "F5-TTS-pt-br"
-  checkpoint_step: "last"
-  local_model_path: "/home/pressprexx/Code/tmp_lettuce/F5-TTS-pt-br/pt-br/model_last.safetensors"  # Path to local model file
-  config:
-    dim: 1024
-    depth: 22
-    heads: 16
-    ff_mult: 2
-    text_dim: 512
-    conv_layers: 4
-
-# Audio Generation Settings
-audio:
-  mel_spec_type: "vocos"
-  speed: 1.0
-
 # Dataset Settings
 dataset:
   dialog_data_path: "hf://datasets/AKCIT-Audio/LIGHT_transcriptions/data/train-00000-of-00001.parquet"
   reference_dataset: "freds0/BRSpeech-TTS-Leni"
   reference_split: "train"
-
-# Output Settings
-output:
-  base_dir: "generated_audio"  # Default output directory
